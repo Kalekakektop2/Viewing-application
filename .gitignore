@@ -10,6 +10,7 @@ dist/
 build/
 *.spec.bak
 _tiny.py
+_tiny.spec
 
 *.log
 data/cache/

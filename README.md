@@ -9,6 +9,8 @@
 **UI-гайд:** [Frontend-Design-SKILLS-for-AI](https://github.com/AkyRayy/Frontend-Design-SKILLS-for-AI)  
 (эстетика Technical + Refined Minimal: токены, один accent, hairlines, anti-slop)
 
+**Перенос на другой ПК:** [docs/TRANSFER.md](docs/TRANSFER.md)
+
 ---
 
 ## Возможности (MVP 0.1)
