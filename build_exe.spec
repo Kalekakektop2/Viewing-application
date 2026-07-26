@@ -3,11 +3,19 @@
 
 block_cipher = None
 
+from pathlib import Path
+
+_ROOT = Path(SPECPATH)
+_ASSETS = _ROOT / "assets"
+
 a = Analysis(
     ["src/viewing_app/__main__.py"],
     pathex=["src"],
     binaries=[],
-    datas=[],
+    datas=[
+        (str(_ASSETS / "viewing.ico"), "assets"),
+        (str(_ASSETS / "viewing.png"), "assets"),
+    ] if (_ASSETS / "viewing.ico").exists() else [],
     hiddenimports=[
         "viewing_app",
         "viewing_app.main",
@@ -72,4 +80,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=str(_ASSETS / "viewing.ico") if (_ASSETS / "viewing.ico").exists() else None,
 )

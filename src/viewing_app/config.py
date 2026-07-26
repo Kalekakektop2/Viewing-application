@@ -16,6 +16,13 @@ def _project_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def resource_path(*parts: str) -> Path:
+    """Path to bundled resource (PyInstaller _MEIPASS) or project assets."""
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS) / Path(*parts)  # type: ignore[attr-defined]
+    return _project_root() / Path(*parts)
+
+
 # Project root: Viewing-application/ (or dist/ when packaged)
 ROOT = _project_root()
 DATA_DIR = ROOT / "data"
