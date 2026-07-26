@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import base64
+import json
 import re
 from dataclasses import dataclass
 from io import BytesIO
 from typing import Optional
+from urllib import error, request
 
 from PIL import Image
 
@@ -15,6 +18,8 @@ from viewing_app.ai.prompts import (
 from viewing_app.cache.store import ItemCache
 from viewing_app.config import Settings
 from viewing_app.session import GameSession
+
+GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta"
 
 
 @dataclass
@@ -35,20 +40,6 @@ class VisionClient:
         self.settings = settings
         self.session = session
         self.cache = cache
-        self._client = None
-
-    def _ensure_client(self):
-        if self._client is not None:
-            return self._client
-        if not self.settings.api_key:
-            return None
-        try:
-            from google import genai
-
-            self._client = genai.Client(api_key=self.settings.api_key)
-            return self._client
-        except Exception:
-            return None
 
     def analyze(
         self,
@@ -61,8 +52,9 @@ class VisionClient:
         if intent == INTENT_IMAGE:
             return self.generate_image(image, user_text=user_text)
 
-        # Cache path: only if we already know item from a previous turn and text matches
-        # Full vision cache by image hash is too brittle; rely on item name after first ID.
+        if not self.settings.api_key:
+            return self._offline_stub(image, intent=intent, user_text=user_text)
+
         prompt = build_analysis_prompt(
             intent=intent,
             user_text=user_text,
@@ -71,31 +63,8 @@ class VisionClient:
             language=self.settings.language,
         )
 
-        client = self._ensure_client()
-        if client is None:
-            return self._offline_stub(image, intent=intent, user_text=user_text)
-
         try:
-            from google.genai import types
-
-            buf = BytesIO()
-            rgb = image.convert("RGB")
-            rgb.save(buf, format="PNG")
-            img_bytes = buf.getvalue()
-
-            response = client.models.generate_content(
-                model=self.settings.gemini_model,
-                contents=[
-                    types.Content(
-                        role="user",
-                        parts=[
-                            types.Part.from_bytes(data=img_bytes, mime_type="image/png"),
-                            types.Part.from_text(text=prompt),
-                        ],
-                    )
-                ],
-            )
-            raw = (response.text or "").strip()
+            raw = self._generate_content(image=image, text=prompt)
             parsed = self._parse_response(raw)
             warning = self.session.update_game(parsed.game, parsed.confidence)
             parsed.warning = warning
@@ -116,23 +85,9 @@ class VisionClient:
                     answer=parsed.answer,
                     banal=True,
                 )
-
-            # Try cache hit for known item + intent if model marked banal previously
-            if parsed.item:
-                cached = self.cache.lookup_banal(
-                    parsed.item,
-                    self.session.game_name,
-                    intent,
-                    detail_mode,
-                )
-                # already have answer from model; cache is for next time
-
             return parsed
         except Exception as exc:
-            return AnalysisResult(
-                answer="",
-                error=f"Ошибка Vision API: {exc}",
-            )
+            return AnalysisResult(answer="", error=f"Ошибка Vision API: {exc}")
 
     def try_cache_only(
         self,
@@ -154,40 +109,33 @@ class VisionClient:
         )
 
     def generate_image(self, image: Image.Image, *, user_text: str) -> AnalysisResult:
-        client = self._ensure_client()
-        if client is None:
+        if not self.settings.api_key:
             return AnalysisResult(
                 answer="",
                 error="Нет GEMINI_API_KEY — генерация изображения недоступна.",
             )
-        # First identify quickly for better prompt if no text
         item = user_text.strip() or "game item from screenshot"
         prompt = build_image_prompt(item, self.session.game_name, user_text)
         try:
-            from google.genai import types
-
-            # Prefer image generation models when available; fall back to message.
-            # gemini-2.0-flash-preview-image-generation or imagen — varies by account.
-            model = self.settings.gemini_model
-            response = client.models.generate_content(
-                model=model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_modalities=["TEXT", "IMAGE"],
-                ),
+            # Image generation endpoints vary; try generateContent with IMAGE modality
+            url = (
+                f"{GEMINI_BASE}/models/{self.settings.gemini_model}:generateContent"
+                f"?key={self.settings.api_key}"
             )
+            body = {
+                "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]},
+            }
+            data = self._post_json(url, body)
             image_bytes = None
             text_parts: list[str] = []
-            for cand in getattr(response, "candidates", None) or []:
-                content = getattr(cand, "content", None)
-                if not content:
-                    continue
-                for part in getattr(content, "parts", None) or []:
-                    if getattr(part, "text", None):
-                        text_parts.append(part.text)
-                    inline = getattr(part, "inline_data", None)
-                    if inline and getattr(inline, "data", None):
-                        image_bytes = inline.data
+            for cand in data.get("candidates") or []:
+                for part in (cand.get("content") or {}).get("parts") or []:
+                    if part.get("text"):
+                        text_parts.append(part["text"])
+                    inline = part.get("inlineData") or part.get("inline_data")
+                    if inline and inline.get("data"):
+                        image_bytes = base64.b64decode(inline["data"])
             if image_bytes:
                 return AnalysisResult(
                     answer="Изображение сгенерировано.",
@@ -195,8 +143,8 @@ class VisionClient:
                     item=item,
                 )
             return AnalysisResult(
-                answer="\n".join(text_parts) or "Модель не вернула изображение. "
-                "Попробуйте другую модель (image-capable) или повторите позже.",
+                answer="\n".join(text_parts)
+                or "Модель не вернула изображение. Попробуйте image-модель позже.",
                 error=None if text_parts else "no_image",
             )
         except Exception as exc:
@@ -204,9 +152,56 @@ class VisionClient:
                 answer="",
                 error=(
                     f"Генерация изображения не удалась: {exc}\n"
-                    "Убедитесь, что выбранная модель поддерживает IMAGE."
+                    "Нужна image-capable модель."
                 ),
             )
+
+    def _generate_content(self, *, image: Image.Image, text: str) -> str:
+        buf = BytesIO()
+        image.convert("RGB").save(buf, format="PNG")
+        b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+        url = (
+            f"{GEMINI_BASE}/models/{self.settings.gemini_model}:generateContent"
+            f"?key={self.settings.api_key}"
+        )
+        body = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [
+                        {"inline_data": {"mime_type": "image/png", "data": b64}},
+                        {"text": text},
+                    ],
+                }
+            ]
+        }
+        data = self._post_json(url, body)
+        # Prefer candidates text
+        texts: list[str] = []
+        for cand in data.get("candidates") or []:
+            for part in (cand.get("content") or {}).get("parts") or []:
+                if part.get("text"):
+                    texts.append(part["text"])
+        if not texts:
+            # Some errors return promptFeedback only
+            raise RuntimeError(json.dumps(data, ensure_ascii=False)[:500])
+        return "\n".join(texts).strip()
+
+    def _post_json(self, url: str, body: dict) -> dict:
+        payload = json.dumps(body).encode("utf-8")
+        req = request.Request(
+            url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with request.urlopen(req, timeout=90) as resp:
+                raw = resp.read().decode("utf-8")
+                return json.loads(raw)
+        except error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            raise RuntimeError(f"HTTP {exc.code}: {detail[:800]}") from exc
 
     def _parse_response(self, raw: str) -> AnalysisResult:
         game = None
@@ -220,8 +215,6 @@ class VisionClient:
         if meta_match:
             meta_raw = meta_match.group(1).strip()
             try:
-                import json
-
                 meta = json.loads(meta_raw)
                 game = meta.get("game")
                 confidence = float(meta.get("confidence") or 0)
@@ -253,7 +246,7 @@ class VisionClient:
                 f"Intent: {intent}\n"
                 f"Вопрос: {user_text or '(пусто → что это + крафт)'}\n"
                 f"{self.session.context_summary()}\n\n"
-                "Добавьте GEMINI_API_KEY в файл `.env` (см. `.env.example`) "
+                "Добавьте GEMINI_API_KEY в файл `.env` "
                 "и перезапустите приложение.\n"
                 "Ключ: https://aistudio.google.com/apikey"
             ),

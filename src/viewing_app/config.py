@@ -2,18 +2,29 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Project root: Viewing-application/
-ROOT = Path(__file__).resolve().parents[2]
+
+def _project_root() -> Path:
+    """Dev: repo root. Frozen .exe: folder next to the executable."""
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parents[2]
+
+
+# Project root: Viewing-application/ (or dist/ when packaged)
+ROOT = _project_root()
 DATA_DIR = ROOT / "data"
 CACHE_DIR = DATA_DIR / "cache"
 SETTINGS_PATH = DATA_DIR / "settings.json"
 
 load_dotenv(ROOT / ".env")
+# Also try cwd (handy when launching from another folder)
+load_dotenv(Path.cwd() / ".env", override=False)
 
 
 @dataclass
@@ -21,7 +32,7 @@ class Settings:
     hotkey: str = "alt+e"
     detail_mode: str = "brief"  # brief | detailed
     gemini_model: str = field(
-        default_factory=lambda: os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        default_factory=lambda: os.getenv("GEMINI_MODEL", "gemini-flash-latest")
     )
     api_key: str = field(default_factory=lambda: os.getenv("GEMINI_API_KEY", "").strip())
     language: str = "ru"

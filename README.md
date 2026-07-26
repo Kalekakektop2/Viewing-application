@@ -38,6 +38,25 @@
 
 ## Установка и запуск
 
+### Готовый .exe
+
+```bat
+:: после сборки:
+dist\Viewing.exe
+```
+
+Рядом с exe положите файл `.env` с `GEMINI_API_KEY=...`  
+(модель по умолчанию: `gemini-flash-latest`).
+
+Сборка exe:
+
+```bat
+build_exe.bat
+:: или:  .venv\Scripts\python -m PyInstaller --noconfirm build_exe.spec
+```
+
+### Из исходников
+
 ```bat
 cd Viewing-application
 copy .env.example .env
