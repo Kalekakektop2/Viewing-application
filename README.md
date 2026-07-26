@@ -3,7 +3,11 @@
 **Windows-оверлей** для геймеров: `Alt+E` → выделить область → Vision-ИИ (Gemini) подсказывает, что на скрине, как скрафтить и где найти.
 
 Спецификация: [docs/APP_SPEC.md](docs/APP_SPEC.md)  
-Продуктовый вижен: [Visual-gaming](https://github.com/Kalekakektop2/-Visual-gaming)
+Дизайн и поток (без дампа кода): [docs/DESIGN.md](docs/DESIGN.md)  
+Продуктовый вижен: [Visual-gaming](https://github.com/Kalekakektop2/-Visual-gaming)  
+
+**UI-гайд:** [Frontend-Design-SKILLS-for-AI](https://github.com/AkyRayy/Frontend-Design-SKILLS-for-AI)  
+(эстетика Technical + Refined Minimal: токены, один accent, hairlines, anti-slop)
 
 ---
 

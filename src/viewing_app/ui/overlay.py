@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from io import BytesIO
 from typing import Callable, Optional
 
 from PIL import Image
-from PySide6.QtCore import Qt, QThread, Signal
-from PySide6.QtGui import QImage, QPixmap
+from PySide6.QtCore import QTimer, Qt, QThread, Signal
+from PySide6.QtGui import QImage, QPixmap, QTextCursor
 from PySide6.QtWidgets import (
     QApplication,
     QButtonGroup,
@@ -16,7 +15,6 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QRadioButton,
-    QScrollArea,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -32,6 +30,7 @@ from viewing_app.ai.prompts import (
     INTENT_LOCATE,
 )
 from viewing_app.config import Settings
+from viewing_app.ui.theme import overlay_stylesheet
 
 
 class Worker(QThread):
@@ -63,13 +62,18 @@ class Worker(QThread):
             )
             self.finished_ok.emit(result)
         except Exception as exc:
+            # Never let worker exception kill the process
             self.failed.emit(str(exc))
 
 
 class OverlayPanel(QWidget):
-    """Always-on-top assistant panel. Closes when clicking the outside dimmer."""
+    """Wide horizontal HUD overlay. Click outside to close."""
 
     closed = Signal()
+
+    # Landscape HUD size
+    CARD_W = 980
+    CARD_H = 340
 
     def __init__(
         self,
@@ -84,6 +88,11 @@ class OverlayPanel(QWidget):
         self._image: Optional[Image.Image] = None
         self._worker: Optional[Worker] = None
         self._last_item: Optional[str] = None
+        self._auto_timer: Optional[QTimer] = None
+        self._last_intent: str = INTENT_DEFAULT
+        self._last_user_text: str = ""
+        self._has_answer: bool = False
+        self._current_detail: str = settings.detail_mode
 
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
@@ -92,99 +101,73 @@ class OverlayPanel(QWidget):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
-        # Root: full-screen dimmer + floating card
         self._dimmer = QWidget(self)
-        self._dimmer.setStyleSheet("background: rgba(0,0,0,100);")
+        # Soft scrim — not heavy glassmorphism
+        self._dimmer.setStyleSheet("background: rgba(0,0,0,110);")
         self._dimmer.mousePressEvent = self._on_dimmer_click  # type: ignore[method-assign]
 
         self._card = QFrame(self)
         self._card.setObjectName("card")
-        self._card.setStyleSheet(
-            """
-            QFrame#card {
-                background: #0f0e1a;
-                border: 1px solid rgba(0, 240, 255, 0.35);
-                border-radius: 14px;
-            }
-            QLabel, QRadioButton, QTextEdit, QLineEdit {
-                color: #e8e8f0;
-                font-family: Segoe UI, sans-serif;
-            }
-            QLineEdit, QTextEdit {
-                background: #07060d;
-                border: 1px solid rgba(255,255,255,0.12);
-                border-radius: 8px;
-                padding: 8px;
-            }
-            QPushButton {
-                background: qlineargradient(x1:0,y1:0,x2:1,y2:1,
-                    stop:0 #00f0ff, stop:1 #b026ff);
-                color: #07060d;
-                border: none;
-                border-radius: 8px;
-                padding: 8px 12px;
-                font-weight: 700;
-            }
-            QPushButton:disabled { opacity: 0.5; }
-            QPushButton#secondary {
-                background: rgba(255,255,255,0.08);
-                color: #e8e8f0;
-                border: 1px solid rgba(255,255,255,0.12);
-            }
-            QPushButton#danger {
-                background: rgba(255,60,80,0.15);
-                color: #ff8a9a;
-                border: 1px solid rgba(255,60,80,0.35);
-            }
-            """
-        )
+        self._card.setStyleSheet(overlay_stylesheet())
 
-        layout = QVBoxLayout(self._card)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(10)
+        root = QHBoxLayout(self._card)
+        root.setContentsMargins(16, 14, 16, 14)
+        root.setSpacing(0)
+
+        # ---- LEFT column: preview + controls ----
+        left = QVBoxLayout()
+        left.setContentsMargins(0, 0, 16, 0)
+        left.setSpacing(10)
+
+        kicker = QLabel("OVERLAY")
+        kicker.setObjectName("kicker")
+        left.addWidget(kicker)
 
         header = QHBoxLayout()
         title = QLabel("Viewing")
-        title.setStyleSheet("font-size: 16px; font-weight: 800; color: #00f0ff;")
+        title.setObjectName("title")
         self.game_label = QLabel("Игра: —")
-        self.game_label.setStyleSheet("color: #9aa0b5; font-size: 12px;")
+        self.game_label.setObjectName("muted")
         header.addWidget(title)
         header.addStretch()
         header.addWidget(self.game_label)
-        layout.addLayout(header)
+        left.addLayout(header)
 
         self.preview = QLabel()
-        self.preview.setFixedHeight(90)
+        self.preview.setObjectName("preview")
+        self.preview.setFixedSize(280, 96)
         self.preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.preview.setStyleSheet(
-            "background:#07060d; border-radius:8px; border:1px solid rgba(255,255,255,0.08);"
-        )
-        layout.addWidget(self.preview)
+        left.addWidget(self.preview)
 
         self.warning_label = QLabel("")
+        self.warning_label.setObjectName("warning")
         self.warning_label.setWordWrap(True)
-        self.warning_label.setStyleSheet("color:#ffcc66; font-size:12px;")
         self.warning_label.hide()
-        layout.addWidget(self.warning_label)
+        left.addWidget(self.warning_label)
 
         self.input = QLineEdit()
-        self.input.setPlaceholderText("Свой вопрос… или отправьте пустым (что это + крафт)")
+        self.input.setPlaceholderText("Уточняющий вопрос… (Enter)")
         self.input.returnPressed.connect(self._on_send_custom)
-        layout.addWidget(self.input)
+        left.addWidget(self.input)
 
         btns = QHBoxLayout()
+        btns.setSpacing(6)
         self.btn_id = QPushButton("Что это?")
+        self.btn_id.setObjectName("secondary")
         self.btn_craft = QPushButton("Как скрафтить?")
+        self.btn_craft.setObjectName("secondary")
         self.btn_where = QPushButton("Где найти?")
+        self.btn_where.setObjectName("secondary")
         self.btn_id.clicked.connect(lambda: self._ask(INTENT_IDENTIFY))
         self.btn_craft.clicked.connect(lambda: self._ask(INTENT_CRAFT))
         self.btn_where.clicked.connect(lambda: self._ask(INTENT_LOCATE))
         btns.addWidget(self.btn_id)
         btns.addWidget(self.btn_craft)
         btns.addWidget(self.btn_where)
-        layout.addLayout(btns)
+        left.addLayout(btns)
 
         modes = QHBoxLayout()
+        modes.setSpacing(12)
         self.mode_group = QButtonGroup(self)
         self.radio_brief = QRadioButton("Кратко")
         self.radio_detail = QRadioButton("Расширенно")
@@ -194,46 +177,76 @@ class OverlayPanel(QWidget):
             self.radio_detail.setChecked(True)
         else:
             self.radio_brief.setChecked(True)
+        self.radio_brief.toggled.connect(self._on_detail_mode_toggled)
+        self.radio_detail.toggled.connect(self._on_detail_mode_toggled)
         modes.addWidget(self.radio_brief)
         modes.addWidget(self.radio_detail)
         modes.addStretch()
-        layout.addLayout(modes)
+        left.addLayout(modes)
 
         actions = QHBoxLayout()
+        actions.setSpacing(6)
         self.btn_send = QPushButton("Спросить")
         self.btn_send.clicked.connect(self._on_send_custom)
-        self.btn_photo = QPushButton("Сгенерировать фото")
+        self.btn_photo = QPushButton("Фото")
         self.btn_photo.setObjectName("secondary")
         self.btn_photo.clicked.connect(self._on_generate_photo)
         self.btn_settings = QPushButton("⚙")
-        self.btn_settings.setObjectName("secondary")
-        self.btn_settings.setFixedWidth(40)
+        self.btn_settings.setObjectName("ghost")
+        self.btn_settings.setFixedWidth(36)
+        self.btn_settings.setToolTip("Настройки")
         self.btn_settings.clicked.connect(self._open_settings)
         self.btn_close = QPushButton("✕")
         self.btn_close.setObjectName("danger")
-        self.btn_close.setFixedWidth(40)
+        self.btn_close.setFixedWidth(36)
+        self.btn_close.setToolTip("Закрыть")
         self.btn_close.clicked.connect(self.hide_panel)
         actions.addWidget(self.btn_send)
         actions.addWidget(self.btn_photo)
         actions.addWidget(self.btn_settings)
         actions.addWidget(self.btn_close)
-        layout.addLayout(actions)
+        left.addLayout(actions)
 
         self.status = QLabel("")
-        self.status.setStyleSheet("color:#7fdfff; font-size:12px;")
-        layout.addWidget(self.status)
+        self.status.setObjectName("status")
+        self.status.setWordWrap(True)
+        left.addWidget(self.status)
+        left.addStretch(1)
+
+        left_wrap = QWidget()
+        left_wrap.setFixedWidth(300)
+        left_wrap.setLayout(left)
+        root.addWidget(left_wrap)
+
+        divider = QFrame()
+        divider.setObjectName("divider")
+        divider.setFrameShape(QFrame.Shape.NoFrame)
+        root.addWidget(divider)
+
+        # ---- RIGHT column: answer ----
+        right = QVBoxLayout()
+        right.setContentsMargins(16, 0, 0, 0)
+        right.setSpacing(8)
+        ans_kicker = QLabel("ANSWER")
+        ans_kicker.setObjectName("kicker")
+        right.addWidget(ans_kicker)
 
         self.answer = QTextEdit()
         self.answer.setReadOnly(True)
-        self.answer.setMinimumHeight(180)
-        self.answer.setPlaceholderText("Ответ ИИ появится здесь. Можно задать ещё вопрос.")
-        layout.addWidget(self.answer)
+        self.answer.setPlaceholderText(
+            "После скрина — автоответ: что это + как скрафтить. "
+            "Кнопки и поле — для уточнений."
+        )
+        self.answer.textChanged.connect(self._scroll_answer_to_bottom)
+        right.addWidget(self.answer, 1)
 
         self.image_out = QLabel()
         self.image_out.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.image_out.setMaximumHeight(120)
         self.image_out.hide()
-        layout.addWidget(self.image_out)
+        right.addWidget(self.image_out)
 
+        root.addLayout(right, 1)
         self.hide()
 
     def _open_settings(self) -> None:
@@ -241,29 +254,77 @@ class OverlayPanel(QWidget):
             self.on_open_settings()
 
     def _on_dimmer_click(self, event) -> None:
-        # Close only if click is outside the card
         if not self._card.geometry().contains(event.position().toPoint()):
             self.hide_panel()
 
     def hide_panel(self) -> None:
+        if self._auto_timer is not None:
+            self._auto_timer.stop()
+            self._auto_timer = None
         self.hide()
         self.closed.emit()
 
     def show_for_image(self, image: Image.Image) -> None:
+        """Show HUD and immediately run default analysis (what + craft)."""
         self._image = image
         self._set_preview(image)
         self.answer.clear()
         self.image_out.hide()
         self.warning_label.hide()
-        self.status.setText("Скрин готов. Задайте вопрос или нажмите кнопку.")
+        self._has_answer = False
+        self._last_intent = INTENT_DEFAULT
+        self._last_user_text = ""
+        self._last_item = None
+        self._current_detail = self._detail_mode()
+        self.status.setText("Анализ… (что это + как скрафтить)")
         self._refresh_game_label()
         self._layout_on_screen()
         self.show()
         self.raise_()
         self.activateWindow()
         self.input.setFocus()
-        # Auto default intent if empty — user can still type; we don't auto-send
-        # Spec: default when no context = identify+craft — offer via empty send
+
+        # Auto-answer per TZ: default intent right after capture
+        if self._auto_timer is not None:
+            self._auto_timer.stop()
+        self._auto_timer = QTimer(self)
+        self._auto_timer.setSingleShot(True)
+        self._auto_timer.timeout.connect(self._auto_default_ask)
+        self._auto_timer.start(80)
+
+    def _auto_default_ask(self) -> None:
+        self._ask(INTENT_DEFAULT, "")
+
+    def _on_detail_mode_toggled(self, checked: bool) -> None:
+        """When player flips Кратко/Расширенно after an answer — re-query AI."""
+        if not checked:
+            return  # only the newly selected radio
+        new_mode = self._detail_mode()
+        if new_mode == self._current_detail:
+            return
+        if self._image is None or not self._has_answer:
+            self._current_detail = new_mode
+            return
+        if self._worker and self._worker.isRunning():
+            # revert radio until free
+            self._block_mode_signals(True)
+            if self._current_detail == "detailed":
+                self.radio_detail.setChecked(True)
+            else:
+                self.radio_brief.setChecked(True)
+            self._block_mode_signals(False)
+            self.status.setText("Подождите, идёт запрос…")
+            return
+
+        self._current_detail = new_mode
+        label = "расширенно" if new_mode == "detailed" else "кратко"
+        self.status.setText(f"Переключаю формат: {label}…")
+        # Same question/intent, new detail format
+        self._ask(self._last_intent, self._last_user_text)
+
+    def _block_mode_signals(self, block: bool) -> None:
+        self.radio_brief.blockSignals(block)
+        self.radio_detail.blockSignals(block)
 
     def _layout_on_screen(self) -> None:
         screen = QApplication.primaryScreen()
@@ -272,9 +333,12 @@ class OverlayPanel(QWidget):
         geo = screen.availableGeometry()
         self.setGeometry(geo)
         self._dimmer.setGeometry(self.rect())
-        card_w, card_h = 480, 620
+        card_w, card_h = self.CARD_W, self.CARD_H
+        # Prefer lower-center HUD (less blocking, wide)
         x = geo.x() + (geo.width() - card_w) // 2
-        y = geo.y() + (geo.height() - card_h) // 2
+        y = geo.y() + geo.height() - card_h - 48
+        if y < geo.y() + 20:
+            y = geo.y() + (geo.height() - card_h) // 2
         self._card.setGeometry(x - geo.x(), y - geo.y(), card_w, card_h)
 
     def resizeEvent(self, event) -> None:  # noqa: N802
@@ -283,7 +347,7 @@ class OverlayPanel(QWidget):
 
     def _set_preview(self, image: Image.Image) -> None:
         thumb = image.copy()
-        thumb.thumbnail((420, 80))
+        thumb.thumbnail((270, 90))
         data = thumb.convert("RGBA").tobytes("raw", "RGBA")
         qimg = QImage(
             data,
@@ -312,13 +376,24 @@ class OverlayPanel(QWidget):
             self.btn_send,
             self.btn_photo,
             self.input,
+            self.radio_brief,
+            self.radio_detail,
         ):
             w.setEnabled(not busy)
+
+    def _scroll_answer_to_bottom(self) -> None:
+        cursor = self.answer.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+        self.answer.setTextCursor(cursor)
+        self.answer.ensureCursorVisible()
+        sb = self.answer.verticalScrollBar()
+        sb.setValue(sb.maximum())
 
     def _on_send_custom(self) -> None:
         text = self.input.text().strip()
         if text:
             self._ask(INTENT_CUSTOM, text)
+            self.input.clear()
         else:
             self._ask(INTENT_DEFAULT, "")
 
@@ -345,21 +420,26 @@ class OverlayPanel(QWidget):
         text = self.input.text() if user_text is None else user_text
         if intent != INTENT_CUSTOM and user_text is None:
             text = self.input.text()
+        text = text or ""
 
-        # Cache fast-path for known banal items on craft/locate after first ID
+        self._last_intent = intent
+        self._last_user_text = text
+        self._current_detail = self._detail_mode()
+
         if self._last_item and intent in (INTENT_CRAFT, INTENT_LOCATE, INTENT_IDENTIFY):
             cached = self.client.try_cache_only(
                 self._last_item, intent, self._detail_mode()
             )
             if cached:
-                self._apply_result(cached, user_echo=text or intent)
+                self._apply_result(cached)
                 return
 
         self._set_busy(True)
-        self.status.setText("ИИ анализирует…")
+        mode_label = "расширенно" if self._detail_mode() == "detailed" else "кратко"
+        self.status.setText(f"ИИ анализирует… ({mode_label})")
         self.client.session.add_user(text or intent)
         self._worker = Worker(
-            self.client, self._image, intent, text or "", self._detail_mode()
+            self.client, self._image, intent, text, self._detail_mode()
         )
         self._worker.finished_ok.connect(self._on_result)
         self._worker.failed.connect(self._on_fail)
@@ -368,21 +448,23 @@ class OverlayPanel(QWidget):
     def _on_result(self, result: object) -> None:
         self._set_busy(False)
         assert isinstance(result, AnalysisResult)
-        self._apply_result(result, user_echo=None)
+        self._apply_result(result)
 
-    def _apply_result(self, result: AnalysisResult, user_echo: Optional[str]) -> None:
+    def _apply_result(self, result: AnalysisResult) -> None:
         self._refresh_game_label()
         if result.warning:
             self.warning_label.setText(result.warning)
             self.warning_label.show()
         if result.error == "no_api_key":
-            self.status.setText("Нет API-ключа — показан офлайн-режим")
+            self.status.setText("Нет API-ключа — офлайн-режим")
         elif result.from_cache:
-            self.status.setText("Ответ из кэша (быстрее)")
+            self.status.setText("Из кэша · можно уточнить")
         elif result.error:
             self.status.setText("Ошибка")
         else:
-            self.status.setText("Готово · можно уточнить вопрос")
+            self.status.setText(
+                "Готово · Кратко/Расширенно — переключить формат · кнопки — уточнить"
+            )
 
         parts = []
         if result.answer:
@@ -392,12 +474,21 @@ class OverlayPanel(QWidget):
         text = "\n".join(parts).strip()
         if text:
             prev = self.answer.toPlainText().strip()
-            block = text if not prev else prev + "\n\n———\n\n" + text
+            mode_tag = (
+                "Расширенно" if self._detail_mode() == "detailed" else "Кратко"
+            )
+            header = f"——— {mode_tag} ———"
+            block = text if not prev else prev + "\n\n" + header + "\n\n" + text
             self.answer.setPlainText(block)
             self.client.session.add_assistant(text)
+            self._has_answer = True
+            # Force scroll after layout
+            QTimer.singleShot(0, self._scroll_answer_to_bottom)
+            QTimer.singleShot(50, self._scroll_answer_to_bottom)
 
         if result.item:
             self._last_item = result.item
+        self._current_detail = self._detail_mode()
 
         if result.image_bytes:
             qimg = QImage.fromData(result.image_bytes)
@@ -414,4 +505,7 @@ class OverlayPanel(QWidget):
     def _on_fail(self, message: str) -> None:
         self._set_busy(False)
         self.status.setText("Ошибка")
-        self.answer.append(f"\nОшибка: {message}")
+        prev = self.answer.toPlainText().strip()
+        block = f"Ошибка: {message}"
+        self.answer.setPlainText(block if not prev else prev + "\n\n" + block)
+        QTimer.singleShot(0, self._scroll_answer_to_bottom)
