@@ -52,9 +52,6 @@ class VisionClient:
         if intent == INTENT_IMAGE:
             return self.generate_image(image, user_text=user_text)
 
-        if not self.settings.api_key:
-            return self._offline_stub(image, intent=intent, user_text=user_text)
-
         prompt = build_analysis_prompt(
             intent=intent,
             user_text=user_text,
@@ -62,6 +59,10 @@ class VisionClient:
             game_name=self.session.game_name,
             language=self.settings.language,
         )
+
+        # Production: backend proxy (no client API key). Dev: optional direct Gemini key.
+        if not self.settings.api_key and not self.settings.backend_url:
+            return self._offline_stub(image, intent=intent, user_text=user_text)
 
         try:
             raw = self._generate_content(image=image, text=prompt)
@@ -160,6 +161,30 @@ class VisionClient:
         buf = BytesIO()
         image.convert("RGB").save(buf, format="PNG")
         b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+
+        # Prefer server proxy (player builds: no client key). Dev may set local GEMINI_API_KEY.
+        force_direct = bool(self.settings.api_key) and not getattr(
+            __import__("sys"), "frozen", False
+        )
+        if self.settings.backend_url and not force_direct:
+            data = self._post_json(
+                self.settings.backend_url,
+                {
+                    "image_b64": b64,
+                    "prompt": text,
+                    "model": self.settings.gemini_model,
+                },
+            )
+            if data.get("error"):
+                raise RuntimeError(str(data["error"]))
+            out = (data.get("text") or "").strip()
+            if not out:
+                raise RuntimeError("Пустой ответ backend")
+            return out
+
+        if not self.settings.api_key:
+            raise RuntimeError("Нет API-ключа и backend_url")
+
         url = (
             f"{GEMINI_BASE}/models/{self.settings.gemini_model}:generateContent"
             f"?key={self.settings.api_key}"
@@ -176,14 +201,12 @@ class VisionClient:
             ]
         }
         data = self._post_json(url, body)
-        # Prefer candidates text
         texts: list[str] = []
         for cand in data.get("candidates") or []:
             for part in (cand.get("content") or {}).get("parts") or []:
                 if part.get("text"):
                     texts.append(part["text"])
         if not texts:
-            # Some errors return promptFeedback only
             raise RuntimeError(json.dumps(data, ensure_ascii=False)[:500])
         return "\n".join(texts).strip()
 
@@ -241,16 +264,13 @@ class VisionClient:
         w, h = image.size
         return AnalysisResult(
             answer=(
-                "🔧 Режим без API-ключа.\n\n"
+                "Нет связи с AI-сервером.\n\n"
                 f"Размер скрина: {w}×{h}px\n"
-                f"Intent: {intent}\n"
-                f"Вопрос: {user_text or '(пусто → что это + крафт)'}\n"
                 f"{self.session.context_summary()}\n\n"
-                "Добавьте GEMINI_API_KEY в файл `.env` "
-                "и перезапустите приложение.\n"
-                "Ключ: https://aistudio.google.com/apikey"
+                "Бета ходит на backend сайта (ключ Gemini только на сервере).\n"
+                "Проверьте интернет или backend_url в настройках."
             ),
             game=self.session.game_name,
             confidence=self.session.game_confidence,
-            error="no_api_key",
+            error="no_backend",
         )
