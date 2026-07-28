@@ -10,7 +10,7 @@
 (эстетика Technical + Refined Minimal: токены, один accent, hairlines, anti-slop)
 
 **Перенос на другой ПК:** [docs/TRANSFER.md](docs/TRANSFER.md)  
-**Карта кода (graphify):** [docs/GRAPHIFY.md](docs/GRAPHIFY.md) · `graphify-out/graph.html`
+**Карта кода для команды (graphify, не в .exe):** [docs/GRAPHIFY.md](docs/GRAPHIFY.md) · `graphify-out/graph.html`
 
 ---
 

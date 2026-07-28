@@ -1,58 +1,76 @@
-# Graphify — карта кода Viewing
+# Graphify — только для команды (этот репозиторий)
 
-Установлен пакет **[graphify](https://github.com/graphify-labs/graphify)** (PyPI: `graphifyy`).
+**Не** часть приложения для игроков.  
+**Не** часть сайта Netlify/Vercel.  
+**Да** — карта кода **Viewing-application** для нас (разработка / Grok / Cursor).
 
-## Что это
+Пакет: [graphify-labs/graphify](https://github.com/graphify-labs/graphify) (PyPI: `graphifyy`).
 
-Инструмент строит **граф знаний** по репозиторию: классы, функции, связи.  
-Удобно навигироваться по архитектуре без чтения всех файлов.
+---
 
-## Установка (уже в venv)
+## Зачем
+
+Быстро понимать связи в проекте: `OverlayPanel` → `VisionClient` → backend, без перечитывания всех файлов.
+
+Выход: папка `graphify-out/` в корне **этого** репо.
+
+| Файл | Для чего |
+|------|----------|
+| `graphify-out/graph.html` | Открыть в браузере — интерактивный граф |
+| `graphify-out/graph.json` | Запросы CLI |
+| `graphify-out/GRAPH_REPORT.md` | Текстовый отчёт |
+
+---
+
+## Установка (на dev-машине)
 
 ```bat
+cd Viewing-application
 .venv\Scripts\activate
-pip install graphifyy
+pip install -r requirements-dev.txt
 graphify install --platform windows
 graphify install --platform agents
 ```
 
-## Пересобрать граф
+Runtime для exe: только `requirements.txt` (**без** graphify).
+
+---
+
+## Пересобрать граф по этому проекту
 
 ```bat
-cd Viewing-application
+cd C:\Users\Admin\Viewing-application
 .venv\Scripts\graphify extract . --code-only --out .
 .venv\Scripts\graphify cluster-only . --no-label
 ```
 
-Результат: `graphify-out/`
-
-| Файл | Смысл |
-|------|--------|
-| `graph.html` | Интерактивный граф |
-| `graph.json` | Данные для запросов |
-| `GRAPH_REPORT.md` | Отчёт / communities |
-
-## Полезные команды
+## Запросы
 
 ```bat
 graphify god-nodes --top 15
-graphify query "how does capture reach Gemini?"
+graphify query "how does capture reach the backend?"
 graphify path "RegionSelector" "VisionClient"
-graphify explain "OverlayPanel"
-graphify hook install
+graphify explain "AppController"
 ```
 
-## God nodes (текущий снимок)
+Hook (опционально): `graphify hook install` — обновление графа после commit.
+
+---
+
+## God nodes (снимок)
 
 1. OverlayPanel  
 2. AppController  
 3. VisionClient  
-4. ItemCache  
-5. Settings  
-6. RegionSelector  
-7. GameSession  
+4. ItemCache / Settings / RegionSelector / GameSession  
 
-## Примечание
+---
 
-Полный multimodal-режим (`/graphify .`) использует LLM.  
-`--code-only` — только AST, **без API-ключа**, подходит для CI.
+## Границы
+
+| | |
+|--|--|
+| Репо | `Viewing-application` only |
+| Игроки / `.exe` | graphify **не** входит |
+| Сайт | graphify **не** входит |
+| Команда / ИИ-агенты | да — `graphify-out/` + `/graphify .` |
