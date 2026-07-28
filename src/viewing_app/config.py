@@ -34,10 +34,9 @@ load_dotenv(ROOT / ".env")
 load_dotenv(Path.cwd() / ".env", override=False)
 
 
-# Public site backend (API key stays on Netlify — never in the .exe)
-DEFAULT_BACKEND_URL = (
-    "https://symphonious-cobbler-d99370.netlify.app/.netlify/functions/analyze"
-)
+# Public backend (API key only on server — never in the .exe).
+# Prefer Vercel /api/analyze. Override with VIEWING_BACKEND_URL if needed.
+DEFAULT_BACKEND_URL = "https://game-vision-site.vercel.app/api/analyze"
 
 
 @dataclass
