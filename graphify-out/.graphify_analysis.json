@@ -1,0 +1,358 @@
+{
+  "communities": {
+    "0": [
+      "qdialog",
+      "src_viewing_app_config",
+      "src_viewing_app_config_normalize_backend_url",
+      "src_viewing_app_config_project_root",
+      "src_viewing_app_config_py_path",
+      "src_viewing_app_config_rationale_13",
+      "src_viewing_app_config_rationale_20",
+      "src_viewing_app_config_rationale_42",
+      "src_viewing_app_config_resource_path",
+      "src_viewing_app_config_settings",
+      "src_viewing_app_config_settings_load",
+      "src_viewing_app_config_settings_save",
+      "src_viewing_app_config_settings_to_public_dict",
+      "src_viewing_app_main_appcontroller_open_settings",
+      "src_viewing_app_main_py_src_viewing_app_main_a93dec",
+      "src_viewing_app_ui_init",
+      "src_viewing_app_ui_overlay",
+      "src_viewing_app_ui_settings_dialog",
+      "src_viewing_app_ui_settings_dialog_settingsdialog",
+      "src_viewing_app_ui_settings_dialog_settingsdialog_init",
+      "src_viewing_app_ui_settings_dialog_settingsdialog_save",
+      "src_viewing_app_ui_settings_dialog_settingsdialog_showevent",
+      "src_viewing_app_ui_theme",
+      "src_viewing_app_ui_theme_app_stylesheet",
+      "src_viewing_app_ui_theme_overlay_stylesheet",
+      "src_viewing_app_ui_theme_rationale_1",
+      "src_viewing_app_ui_theme_rationale_35",
+      "src_viewing_app_ui_theme_rationale_71",
+      "src_viewing_app_ui_theme_settings_stylesheet",
+      "src_viewing_app_ui_theme_tray_stylesheet",
+      "src_viewing_app_ui_tray_window"
+    ],
+    "1": [
+      "qthread",
+      "src_viewing_app_ui_overlay_overlaypanel",
+      "src_viewing_app_ui_overlay_overlaypanel_apply_result",
+      "src_viewing_app_ui_overlay_overlaypanel_ask",
+      "src_viewing_app_ui_overlay_overlaypanel_auto_default_ask",
+      "src_viewing_app_ui_overlay_overlaypanel_block_mode_signals",
+      "src_viewing_app_ui_overlay_overlaypanel_detail_mode",
+      "src_viewing_app_ui_overlay_overlaypanel_hide_panel",
+      "src_viewing_app_ui_overlay_overlaypanel_init",
+      "src_viewing_app_ui_overlay_overlaypanel_layout_on_screen",
+      "src_viewing_app_ui_overlay_overlaypanel_on_detail_mode_toggled",
+      "src_viewing_app_ui_overlay_overlaypanel_on_dimmer_click",
+      "src_viewing_app_ui_overlay_overlaypanel_on_fail",
+      "src_viewing_app_ui_overlay_overlaypanel_on_generate_photo",
+      "src_viewing_app_ui_overlay_overlaypanel_on_result",
+      "src_viewing_app_ui_overlay_overlaypanel_on_send_custom",
+      "src_viewing_app_ui_overlay_overlaypanel_open_settings",
+      "src_viewing_app_ui_overlay_overlaypanel_refresh_game_label",
+      "src_viewing_app_ui_overlay_overlaypanel_resizeevent",
+      "src_viewing_app_ui_overlay_overlaypanel_scroll_answer_to_bottom",
+      "src_viewing_app_ui_overlay_overlaypanel_set_busy",
+      "src_viewing_app_ui_overlay_overlaypanel_set_preview",
+      "src_viewing_app_ui_overlay_overlaypanel_show_for_image",
+      "src_viewing_app_ui_overlay_py_image",
+      "src_viewing_app_ui_overlay_py_qwidget",
+      "src_viewing_app_ui_overlay_rationale_268",
+      "src_viewing_app_ui_overlay_rationale_299",
+      "src_viewing_app_ui_overlay_rationale_70",
+      "src_viewing_app_ui_overlay_worker",
+      "src_viewing_app_ui_overlay_worker_init",
+      "src_viewing_app_ui_overlay_worker_run"
+    ],
+    "2": [
+      "activationreason",
+      "qapplication",
+      "qicon",
+      "slot",
+      "src_viewing_app_main_appcontroller",
+      "src_viewing_app_main_appcontroller_init",
+      "src_viewing_app_main_appcontroller_on_about_to_quit",
+      "src_viewing_app_main_appcontroller_on_cancel_select",
+      "src_viewing_app_main_appcontroller_on_hotkey_changed",
+      "src_viewing_app_main_appcontroller_on_region",
+      "src_viewing_app_main_appcontroller_on_tray_activated",
+      "src_viewing_app_main_appcontroller_setup_tray",
+      "src_viewing_app_main_appcontroller_show_panel",
+      "src_viewing_app_main_appcontroller_shutdown",
+      "src_viewing_app_main_appcontroller_start_capture",
+      "src_viewing_app_main_appcontroller_start_hotkeys",
+      "src_viewing_app_main_appcontroller_startup_toast",
+      "src_viewing_app_main_appcontroller_top_message",
+      "src_viewing_app_main_build_app_icon",
+      "src_viewing_app_main_install_crash_hooks",
+      "src_viewing_app_main_log",
+      "src_viewing_app_main_main",
+      "src_viewing_app_main_py_src_viewing_app_main_d3e3d0",
+      "src_viewing_app_main_rationale_46"
+    ],
+    "3": [
+      "src_viewing_app_hotkeys",
+      "src_viewing_app_hotkeys_hotkeyhost",
+      "src_viewing_app_hotkeys_hotkeyhost_hwnd",
+      "src_viewing_app_hotkeys_hotkeyhost_init",
+      "src_viewing_app_hotkeys_hotkeyhost_nativeevent",
+      "src_viewing_app_hotkeys_hotkeyservice",
+      "src_viewing_app_hotkeys_hotkeyservice_emit_user",
+      "src_viewing_app_hotkeys_hotkeyservice_hotkey",
+      "src_viewing_app_hotkeys_hotkeyservice_init",
+      "src_viewing_app_hotkeys_hotkeyservice_rebind",
+      "src_viewing_app_hotkeys_hotkeyservice_start",
+      "src_viewing_app_hotkeys_hotkeyservice_stop",
+      "src_viewing_app_hotkeys_msg",
+      "src_viewing_app_hotkeys_parse_hotkey_win",
+      "src_viewing_app_hotkeys_py_qobject",
+      "src_viewing_app_hotkeys_py_qwidget",
+      "src_viewing_app_hotkeys_rationale_146",
+      "src_viewing_app_hotkeys_rationale_94"
+    ],
+    "4": [
+      "src_viewing_app_capture_init",
+      "src_viewing_app_capture_region",
+      "src_viewing_app_capture_region_grab_region",
+      "src_viewing_app_capture_region_py_image",
+      "src_viewing_app_capture_region_py_qwidget",
+      "src_viewing_app_capture_region_rationale_36",
+      "src_viewing_app_capture_region_region",
+      "src_viewing_app_capture_region_region_as_mss",
+      "src_viewing_app_capture_region_regionselector",
+      "src_viewing_app_capture_region_regionselector_cover_virtual_desktop",
+      "src_viewing_app_capture_region_regionselector_init",
+      "src_viewing_app_capture_region_regionselector_keypressevent",
+      "src_viewing_app_capture_region_regionselector_mousemoveevent",
+      "src_viewing_app_capture_region_regionselector_mousepressevent",
+      "src_viewing_app_capture_region_regionselector_mousereleaseevent",
+      "src_viewing_app_capture_region_regionselector_paintevent",
+      "src_viewing_app_capture_region_regionselector_start"
+    ],
+    "5": [
+      "src_viewing_app_ai_client",
+      "src_viewing_app_ai_client_analysisresult",
+      "src_viewing_app_ai_client_py_image",
+      "src_viewing_app_ai_client_visionclient",
+      "src_viewing_app_ai_client_visionclient_analyze",
+      "src_viewing_app_ai_client_visionclient_generate_content",
+      "src_viewing_app_ai_client_visionclient_generate_image",
+      "src_viewing_app_ai_client_visionclient_offline_stub",
+      "src_viewing_app_ai_client_visionclient_parse_response",
+      "src_viewing_app_ai_client_visionclient_post_json",
+      "src_viewing_app_ai_client_visionclient_try_cache_only",
+      "src_viewing_app_ai_init",
+      "src_viewing_app_ai_prompts",
+      "src_viewing_app_ai_prompts_build_analysis_prompt",
+      "src_viewing_app_ai_prompts_build_image_prompt",
+      "src_viewing_app_ai_prompts_intent_label"
+    ],
+    "6": [
+      "src_viewing_app_cache_init",
+      "src_viewing_app_cache_store",
+      "src_viewing_app_cache_store_itemcache",
+      "src_viewing_app_cache_store_itemcache_get",
+      "src_viewing_app_cache_store_itemcache_init",
+      "src_viewing_app_cache_store_itemcache_load",
+      "src_viewing_app_cache_store_itemcache_lookup_banal",
+      "src_viewing_app_cache_store_itemcache_make_key",
+      "src_viewing_app_cache_store_itemcache_normalize_item",
+      "src_viewing_app_cache_store_itemcache_put",
+      "src_viewing_app_cache_store_itemcache_save",
+      "src_viewing_app_cache_store_py_path",
+      "src_viewing_app_cache_store_rationale_14"
+    ],
+    "7": [
+      "src_viewing_app_ai_client_visionclient_init",
+      "src_viewing_app_session",
+      "src_viewing_app_session_chatturn",
+      "src_viewing_app_session_gamesession",
+      "src_viewing_app_session_gamesession_add_assistant",
+      "src_viewing_app_session_gamesession_add_user",
+      "src_viewing_app_session_gamesession_context_summary",
+      "src_viewing_app_session_gamesession_reset_dialog",
+      "src_viewing_app_session_gamesession_update_game",
+      "src_viewing_app_session_rationale_15",
+      "src_viewing_app_session_rationale_25"
+    ],
+    "8": [
+      "src_viewing_app_main_bridge",
+      "src_viewing_app_main_py_qobject",
+      "src_viewing_app_ui_tray_window_py_qwidget",
+      "src_viewing_app_ui_tray_window_rationale_19",
+      "src_viewing_app_ui_tray_window_traywindow",
+      "src_viewing_app_ui_tray_window_traywindow_closeevent",
+      "src_viewing_app_ui_tray_window_traywindow_init",
+      "src_viewing_app_ui_tray_window_traywindow_set_hotkey",
+      "src_viewing_app_ui_tray_window_traywindow_show_near_tray"
+    ],
+    "9": [
+      "src_viewing_app_init",
+      "src_viewing_app_init_rationale_1"
+    ],
+    "10": [
+      "pkg_viewing_application"
+    ]
+  },
+  "cohesion": {
+    "0": 0.12043010752688173,
+    "1": 0.11612903225806452,
+    "2": 0.14492753623188406,
+    "3": 0.1568627450980392,
+    "4": 0.16911764705882354,
+    "5": 0.2916666666666667,
+    "6": 0.23076923076923078,
+    "7": 0.21818181818181817,
+    "8": 0.25,
+    "9": 1.0,
+    "10": 1.0
+  },
+  "gods": [
+    {
+      "id": "src_viewing_app_ui_overlay_overlaypanel",
+      "label": "OverlayPanel",
+      "degree": 32
+    },
+    {
+      "id": "src_viewing_app_main_appcontroller",
+      "label": "AppController",
+      "degree": 26
+    },
+    {
+      "id": "src_viewing_app_ai_client_visionclient",
+      "label": "VisionClient",
+      "degree": 22
+    },
+    {
+      "id": "src_viewing_app_cache_store_itemcache",
+      "label": "ItemCache",
+      "degree": 19
+    },
+    {
+      "id": "src_viewing_app_config_settings",
+      "label": "Settings",
+      "degree": 18
+    },
+    {
+      "id": "src_viewing_app_capture_region_regionselector",
+      "label": "RegionSelector",
+      "degree": 16
+    },
+    {
+      "id": "src_viewing_app_session_gamesession",
+      "label": "GameSession",
+      "degree": 15
+    },
+    {
+      "id": "src_viewing_app_ai_client_analysisresult",
+      "label": "AnalysisResult",
+      "degree": 14
+    },
+    {
+      "id": "src_viewing_app_hotkeys_hotkeyservice",
+      "label": "HotkeyService",
+      "degree": 13
+    },
+    {
+      "id": "src_viewing_app_main_bridge",
+      "label": "Bridge",
+      "degree": 12
+    }
+  ],
+  "surprises": [
+    {
+      "source": "AnalysisResult",
+      "target": "ItemCache",
+      "source_files": [
+        "src/viewing_app/ai/client.py",
+        "src/viewing_app/cache/store.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
+    },
+    {
+      "source": "AnalysisResult",
+      "target": "Settings",
+      "source_files": [
+        "src/viewing_app/ai/client.py",
+        "src/viewing_app/config.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
+    },
+    {
+      "source": "AnalysisResult",
+      "target": "GameSession",
+      "source_files": [
+        "src/viewing_app/ai/client.py",
+        "src/viewing_app/session.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
+    },
+    {
+      "source": "OverlayPanel",
+      "target": "AnalysisResult",
+      "source_files": [
+        "src/viewing_app/ui/overlay.py",
+        "src/viewing_app/ai/client.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
+    },
+    {
+      "source": "Worker",
+      "target": "AnalysisResult",
+      "source_files": [
+        "src/viewing_app/ui/overlay.py",
+        "src/viewing_app/ai/client.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `OverlayPanel` connect `Community 1` to `Community 8`, `Community 0`, `Community 2`, `Community 5`?",
+      "why": "High betweenness centrality (0.251) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `AppController` connect `Community 2` to `Community 0`, `Community 1`, `Community 3`, `Community 4`, `Community 5`, `Community 6`, `Community 7`, `Community 8`?",
+      "why": "High betweenness centrality (0.209) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `ItemCache` connect `Community 6` to `Community 0`, `Community 2`, `Community 5`, `Community 7`, `Community 8`?",
+      "why": "High betweenness centrality (0.123) - this node is a cross-community bridge."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 5 inferred relationships involving `OverlayPanel` (e.g. with `AppController` and `Bridge`) actually correct?",
+      "why": "`OverlayPanel` has 5 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 9 inferred relationships involving `AppController` (e.g. with `VisionClient` and `ItemCache`) actually correct?",
+      "why": "`AppController` has 9 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 7 inferred relationships involving `VisionClient` (e.g. with `ItemCache` and `Settings`) actually correct?",
+      "why": "`VisionClient` has 7 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 4 inferred relationships involving `ItemCache` (e.g. with `AnalysisResult` and `VisionClient`) actually correct?",
+      "why": "`ItemCache` has 4 INFERRED edges - model-reasoned connections that need verification."
+    }
+  ]
+}

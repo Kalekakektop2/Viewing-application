@@ -17,3 +17,7 @@ data/cache/
 data/settings.json
 .DS_Store
 Thumbs.db
+
+# graphify — keep report/graph; ignore heavy cache
+graphify-out/cache/
+graphify-out/manifest.json
