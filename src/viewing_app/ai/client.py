@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 import re
 from dataclasses import dataclass
 from io import BytesIO
@@ -162,24 +163,38 @@ class VisionClient:
         image.convert("RGB").save(buf, format="PNG")
         b64 = base64.b64encode(buf.getvalue()).decode("ascii")
 
-        # Prefer server proxy (player builds: no client key). Dev may set local GEMINI_API_KEY.
-        force_direct = bool(self.settings.api_key) and not getattr(
-            __import__("sys"), "frozen", False
+        import sys as _sys
+
+        # Player .exe ALWAYS uses Vercel backend (no key in client).
+        # Local dev: only if VIEWING_FORCE_DIRECT=1 + GEMINI_API_KEY.
+        force_direct = (
+            os.getenv("VIEWING_FORCE_DIRECT", "").strip() in ("1", "true", "yes")
+            and bool(self.settings.api_key)
+            and not getattr(_sys, "frozen", False)
         )
-        if self.settings.backend_url and not force_direct:
-            data = self._post_json(
-                self.settings.backend_url,
-                {
-                    "image_b64": b64,
-                    "prompt": text,
-                    "model": self.settings.gemini_model,
-                },
-            )
+        backend = (self.settings.backend_url or "").strip() or (
+            "https://game-vision-site.vercel.app/api/analyze"
+        )
+        if "netlify" in backend:
+            backend = "https://game-vision-site.vercel.app/api/analyze"
+
+        if backend and not force_direct:
+            try:
+                data = self._post_json(
+                    backend,
+                    {
+                        "image_b64": b64,
+                        "prompt": text,
+                        "model": self.settings.gemini_model,
+                    },
+                )
+            except Exception as exc:
+                raise RuntimeError(f"Backend {backend} → {exc}") from exc
             if data.get("error"):
-                raise RuntimeError(str(data["error"]))
+                raise RuntimeError(f"{backend}: {data['error']}")
             out = (data.get("text") or "").strip()
             if not out:
-                raise RuntimeError("Пустой ответ backend")
+                raise RuntimeError(f"Пустой ответ backend ({backend})")
             return out
 
         if not self.settings.api_key:

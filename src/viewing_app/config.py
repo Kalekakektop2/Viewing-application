@@ -35,8 +35,20 @@ load_dotenv(Path.cwd() / ".env", override=False)
 
 
 # Public backend (API key only on server — never in the .exe).
-# Prefer Vercel /api/analyze. Override with VIEWING_BACKEND_URL if needed.
 DEFAULT_BACKEND_URL = "https://game-vision-site.vercel.app/api/analyze"
+
+
+def _normalize_backend_url(url: str) -> str:
+    """Force working Vercel proxy; reject dead Netlify function URLs."""
+    u = (url or "").strip().rstrip("/")
+    if not u:
+        return DEFAULT_BACKEND_URL
+    # Old broken Netlify path → auto-migrate
+    if "netlify.app" in u or "netlify.com" in u or "/.netlify/functions/" in u:
+        return DEFAULT_BACKEND_URL
+    if not u.endswith("/api/analyze") and "vercel.app" in u and "/api/" not in u:
+        return u.rstrip("/") + "/api/analyze"
+    return u
 
 
 @dataclass
@@ -46,11 +58,9 @@ class Settings:
     gemini_model: str = field(
         default_factory=lambda: os.getenv("GEMINI_MODEL", "gemini-flash-latest")
     )
-    # Optional local/dev key. Production beta uses backend_url without a client key.
+    # Optional local/dev key. Player builds use backend only.
     api_key: str = field(default_factory=lambda: os.getenv("GEMINI_API_KEY", "").strip())
-    backend_url: str = field(
-        default_factory=lambda: os.getenv("VIEWING_BACKEND_URL", DEFAULT_BACKEND_URL).strip()
-    )
+    backend_url: str = field(default_factory=lambda: DEFAULT_BACKEND_URL)
     language: str = "ru"
 
     @classmethod
@@ -81,8 +91,12 @@ class Settings:
         env_backend = os.getenv("VIEWING_BACKEND_URL", "").strip()
         if env_backend:
             base.backend_url = env_backend
-        if not base.backend_url:
-            base.backend_url = DEFAULT_BACKEND_URL
+        base.backend_url = _normalize_backend_url(base.backend_url)
+        # Persist migration away from Netlify so next launch is clean
+        try:
+            base.save()
+        except Exception:
+            pass
         return base
 
     def save(self) -> None:

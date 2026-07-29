@@ -269,14 +269,15 @@ def settings_stylesheet() -> str:
         color: {INK};
         font-family: {FONT};
     }}
-    QLabel {{ color: {INK}; font-size: 13px; }}
+    QLabel {{ color: {INK}; font-size: 14px; }}
     QLineEdit {{
         background: {SURFACE_SUNKEN};
         color: {INK};
         border: 1px solid {HAIRLINE};
         border-radius: {RADIUS_SM};
-        padding: 8px 10px;
-        min-height: 20px;
+        padding: 10px 14px;
+        min-height: 28px;
+        font-size: 15px;
     }}
     QLineEdit:focus {{ border: 1px solid {ACCENT}; }}
     QPushButton {{
@@ -284,9 +285,10 @@ def settings_stylesheet() -> str:
         color: {ACCENT_INK};
         border: none;
         border-radius: {RADIUS_SM};
-        padding: 8px 16px;
+        padding: 10px 18px;
         font-weight: 600;
-        min-height: 34px;
+        min-height: 36px;
+        font-size: 13px;
     }}
     QPushButton:hover {{ background: #7AECF0; }}
     QPushButton#secondary {{

@@ -22,7 +22,9 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         self.settings = settings
         self.setWindowTitle("Viewing — настройки")
-        self.setMinimumWidth(420)
+        self.setMinimumWidth(480)
+        self.setMinimumHeight(220)
+        self.resize(520, 240)
         self.setWindowFlags(
             Qt.WindowType.Dialog
             | Qt.WindowType.WindowStaysOnTopHint
@@ -33,8 +35,8 @@ class SettingsDialog(QDialog):
         self.setStyleSheet(settings_stylesheet())
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 18, 20, 18)
-        layout.setSpacing(14)
+        layout.setContentsMargins(24, 22, 24, 22)
+        layout.setSpacing(16)
 
         kicker = QLabel("SETTINGS")
         kicker.setStyleSheet(
@@ -44,27 +46,27 @@ class SettingsDialog(QDialog):
         layout.addWidget(kicker)
 
         form = QFormLayout()
-        form.setSpacing(10)
+        form.setSpacing(12)
         form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
+        form.setFieldGrowthPolicy(
+            QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow
+        )
 
         self.hotkey_edit = QLineEdit(settings.hotkey)
         self.hotkey_edit.setPlaceholderText("alt+e  ·  ctrl+shift+q")
+        self.hotkey_edit.setMinimumHeight(40)
         form.addRow("Горячая клавиша", self.hotkey_edit)
-
-        self.model_edit = QLineEdit(settings.gemini_model)
-        form.addRow("Модель Gemini", self.model_edit)
-
-        key_state = "задан (.env)" if settings.api_key else "не задан"
-        form.addRow("API-ключ", QLabel(key_state))
         layout.addLayout(form)
 
         hint = QLabel(
-            "Модификаторы: alt, ctrl, shift, win + клавиша.\n"
-            "GEMINI_API_KEY — в файле .env рядом с программой."
+            "От этой комбинации зависит открытие HUD.\n"
+            "Модификаторы: alt, ctrl, shift, win + клавиша."
         )
         hint.setWordWrap(True)
-        hint.setStyleSheet("color:#A3A3A3; font-size:12px;")
+        hint.setStyleSheet("color:#8A8A8A; font-size:12px;")
         layout.addWidget(hint)
+
+        layout.addStretch(1)
 
         buttons = QHBoxLayout()
         buttons.setSpacing(8)
@@ -87,10 +89,8 @@ class SettingsDialog(QDialog):
         hotkey = self.hotkey_edit.text().strip().lower().replace(" ", "")
         if not hotkey:
             hotkey = "alt+e"
-        model = self.model_edit.text().strip() or self.settings.gemini_model
         old = self.settings.hotkey
         self.settings.hotkey = hotkey
-        self.settings.gemini_model = model
         self.settings.save()
         if hotkey != old:
             self.hotkey_changed.emit(hotkey)
